@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - DRN TopUp</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Firebase SDK (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#09090B',
+                            panel: '#18181A',
+                            border: '#27272A'
+                        },
+                        orange: {
+                            500: '#F49E0B',
+                            600: '#D98A00',
+                            hover: '#FFB640'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { background-color: #09090B; color: #ffffff; font-family: 'Poppins', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #18181A; }
+        ::-webkit-scrollbar-thumb { background: #F49E0B; border-radius: 4px; }
+        
+        .flat-input { 
+            background-color: #09090B; 
+            border: 1px solid #27272A; 
+            color: #ffffff; 
+            padding: 10px 14px; 
+            width: 100%; 
+            outline: none; 
+            transition: border-color 0.2s;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        .flat-input:focus { border-color: #F49E0B; }
+        
+        .flat-btn { 
+            background-color: #F49E0B; 
+            color: #ffffff; 
+            padding: 10px 20px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: all 0.2s;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+        .flat-btn:hover { background-color: #FFB640; }
+        .flat-btn-danger { background-color: #DC2626; }
+        .flat-btn-danger:hover { background-color: #EF4444; }
+        .flat-btn-outline { background-color: transparent; border: 1px solid #F49E0B; color: #F49E0B; }
+        .flat-btn-outline:hover { background-color: #F49E0B; color: #ffffff; }
+
+        .flat-table-container {
+            background-color: #18181A;
+            border-radius: 12px;
+            overflow-x: auto;
+            border: 1px solid #27272A;
+        }
+        .flat-table { width: 100%; border-collapse: collapse; min-width: 850px; }
+        .flat-table th, .flat-table td { 
+            border-bottom: 1px solid #27272A; 
+            padding: 12px 14px; 
+            text-align: left; 
+        }
+        .flat-table th { background-color: #1f1f21; color: #F49E0B; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+        .flat-table tr:hover td { background-color: #1a1a1c; }
+        .flat-table td { font-size: 0.85rem; }
+
+        .nav-link { 
+            border-radius: 8px; 
+            margin: 3px 10px;
+            color: #A1A1AA;
+            font-size: 0.85rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active { 
+            background-color: #F49E0B; 
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(244, 158, 11, 0.2);
+            font-weight: 600;
+        }
+        .nav-link:hover:not(.active) {
+            background-color: #27272A;
+            color: #F49E0B;
+        }
+
+        .card {
+            background-color: #18181A;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #27272A;
+        }
+
+        #loading-spinner {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(9, 9, 11, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 4px solid rgba(244, 158, 11, 0.1);
+            border-left-color: #F49E0B;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div id="loading-spinner" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-dark-bg z-50 flex items-center justify-center p-4">
+        <div class="card w-full max-w-md border border-dark-border">
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-extrabold text-orange-500 tracking-wider">DRN ADMIN</h2>
+                <p class="text-xs text-gray-400 mt-1">লগইন করে সাইট কন্ট্রোল করুন</p>
+            </div>
+            <input type="email" id="admin-email" placeholder="Admin Email" class="flat-input mb-3">
+            <input type="password" id="admin-password" placeholder="Password" class="flat-input mb-6">
+            <button onclick="loginAdmin()" class="flat-btn w-full text-base">LOGIN TO DASHBOARD</button>
+            <div class="mt-4 text-center">
+                <a href="index.html" class="text-xs text-gray-500 hover:text-orange-500"><i class="fas fa-arrow-left mr-1"></i> ভিজিটর সাইটে ফিরে যান</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order View Modal -->
+    <div id="order-details-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="card w-full max-w-lg border border-dark-border relative animate-fade-in">
+            <button onclick="closeOrderModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-lg font-bold text-orange-500 mb-4 pb-2 border-b border-dark-border flex items-center gap-2">
+                <i class="fas fa-receipt"></i> Complete Order Details
+            </h3>
+            <div id="order-details-content" class="space-y-2 text-xs text-gray-300">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="mt-5 flex justify-end">
+                <button onclick="closeOrderModal()" class="flat-btn py-1.5 px-5 text-xs">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/70 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Left Sidebar -->
+    <aside class="w-64 bg-dark-panel border-r border-dark-border flex-col hidden fixed inset-y-0 left-0 z-50 lg:static lg:flex transition-transform transform -translate-x-full lg:translate-x-0" id="sidebar">
+        <div class="p-6 border-b border-dark-border flex items-center justify-between">
+            <h1 class="text-xl font-extrabold text-orange-500 tracking-wider">DRN <span class="text-white">ADMIN</span></h1>
+            <button class="lg:hidden text-gray-400 hover:text-white" onclick="toggleSidebar()">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4">
+            <a href="#" onclick="switchView('dashboard')" id="nav-dashboard" class="nav-link active flex items-center px-4 py-2.5">
+                <i class="fas fa-chart-line w-7 text-center"></i> Dashboard
+            </a>
+            <a href="#" onclick="switchView('orders')" id="nav-orders" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-shopping-cart w-7 text-center"></i> Orders
+            </a>
+            <a href="#" onclick="switchView('deposits')" id="nav-deposits" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-wallet w-7 text-center"></i> Deposits (Add Money)
+            </a>
+            <a href="#" onclick="switchView('users')" id="nav-users" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-users w-7 text-center"></i> Users & Balance
+            </a>
+            <a href="#" onclick="switchView('services')" id="nav-services" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-gamepad w-7 text-center"></i> Games & TopUp
+            </a>
+            <a href="#" onclick="switchView('categories')" id="nav-categories" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-tags w-7 text-center"></i> Categories
+            </a>
+            <a href="#" onclick="switchView('settings')" id="nav-settings" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-cog w-7 text-center"></i> Site Settings
+            </a>
+            <a href="#" onclick="switchView('banners')" id="nav-banners" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-image w-7 text-center"></i> Banners
+            </a>
+            <a href="#" onclick="switchView('tutorials')" id="nav-tutorials" class="nav-link flex items-center px-4 py-2.5">
+                <i class="fas fa-video w-7 text-center"></i> Tutorials
+            </a>
+            <a href="index.html" target="_blank" class="nav-link flex items-center px-4 py-2.5 text-sky-400 hover:text-sky-300">
+                <i class="fas fa-external-link-alt w-7 text-center"></i> View Website
+            </a>
+        </nav>
+        <div class="p-4 border-t border-dark-border">
+            <button onclick="logoutAdmin()" class="flat-btn w-full bg-dark-bg border border-dark-border hover:border-red-500 text-gray-300 hover:text-red-500 flex items-center justify-center text-xs py-2">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col hidden bg-dark-bg overflow-hidden" id="main-content">
+        <header class="bg-dark-panel border-b border-dark-border p-4 flex justify-between items-center z-10">
+            <div class="flex items-center gap-3">
+                <button class="lg:hidden text-orange-500 text-xl focus:outline-none" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h2 id="page-title" class="text-lg md:text-xl font-bold text-white tracking-wide">Dashboard</h2>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-xs text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                    <i class="fas fa-circle text-[8px] mr-1"></i> Live Firebase
+                </span>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 bg-dark-bg">
+            
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="view-section">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                    <div class="card flex items-center">
+                        <div class="p-3.5 bg-orange-500/10 rounded-full mr-3.5">
+                            <i class="fas fa-users text-xl text-orange-500"></i>
+                        </div>
+                        <div>
+                            <div class="text-gray-400 text-xs mb-0.5">Total Users</div>
+                            <div class="text-2xl font-bold text-white" id="dash-users">0</div>
+                        </div>
+                    </div>
+                    <div class="card flex items-center">
+                        <div class="p-3.5 bg-blue-500/10 rounded-full mr-3.5">
+                            <i class="fas fa-shopping-cart text-xl text-blue-500"></i>
+                        </div>
+                        <div>
+                            <div class="text-gray-400 text-xs mb-0.5">Total Orders</div>
+                            <div class="text-2xl font-bold text-white" id="dash-orders">0</div>
+                        </div>
+                    </div>
+                    <div class="card flex items-center">
+                        <div class="p-3.5 bg-green-500/10 rounded-full mr-3.5">
+                            <i class="fas fa-wallet text-xl text-green-500"></i>
+                        </div>
+                        <div>
+                            <div class="text-gray-400 text-xs mb-0.5">Pending Deposits</div>
+                            <div class="text-2xl font-bold text-white" id="dash-deposits">0</div>
+                        </div>
+                    </div>
+                    <div class="card flex items-center">
+                        <div class="p-3.5 bg-purple-500/10 rounded-full mr-3.5">
+                            <i class="fas fa-dollar-sign text-xl text-purple-500"></i>
+                        </div>
+                        <div>
+                            <div class="text-gray-400 text-xs mb-0.5">Total TopUp Sold</div>
+                            <div class="text-2xl font-bold text-white" id="dash-revenue">৳0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: ORDERS -->
+            <div id="view-orders" class="view-section hidden">
+                <div class="card">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-orange-500">All TopUp Orders</h3>
+                            <p class="text-xs text-gray-400">UID ও Nickname সহ সকল অর্ডারের তালিকা</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                            <input type="text" id="order-search" placeholder="Search UID or Customer..." onkeyup="searchOrders()" class="flat-input w-full sm:w-56 text-xs py-1.5">
+                            <select id="order-filter" class="flat-input w-full sm:w-40 text-xs py-1.5" onchange="loadOrders()">
+                                <option value="all">All Orders</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="success">Success</option>
+                                <option value="cancel">Canceled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flat-table-container">
+                        <table class="flat-table text-xs">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>User Info</th>
+                                    <th>Game & Pack</th>
+                                    <th>Player UID & Nickname</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th class="w-24 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: DEPOSITS -->
+            <div id="view-deposits" class="view-section hidden">
+                <div class="card">
+                    <h3 class="text-lg font-bold text-orange-500 mb-4">Deposit Requests (টাকা জমা রিকোয়েস্ট)</h3>
+                    <div class="flat-table-container">
+                        <table class="flat-table text-xs">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>User Email</th>
+                                    <th>Method</th>
+                                    <th>TrxID</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th class="w-28 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deposit-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: USERS -->
+            <div id="view-users" class="view-section hidden">
+                <div class="card">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+                        <h3 class="text-lg font-bold text-orange-500">Users & Balance Management</h3>
+                        <input type="text" id="user-search" placeholder="Search by Email/Name..." class="flat-input w-full md:w-64 text-xs py-1.5" onkeyup="searchUsers()">
+                    </div>
+                    <div class="flat-table-container">
+                        <table class="flat-table text-xs">
+                            <thead>
+                                <tr>
+                                    <th>Joined</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Balance</th>
+                                    <th class="w-24 text-center">Edit Bal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SETTINGS -->
+            <div id="view-settings" class="view-section hidden">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    <div class="card">
+                        <h3 class="text-base font-bold text-orange-500 mb-4 pb-2 border-b border-dark-border">General Info</h3>
+                        <div class="space-y-3">
+                            <div><label class="block text-xs text-gray-400 mb-1">Site Name</label><input type="text" id="set-sitename" class="flat-input"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">Logo URL</label><input type="text" id="set-logo" class="flat-input"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">Scrolling Notice</label><textarea id="set-notice" class="flat-input h-20"></textarea></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">Support App/Link</label><input type="text" id="set-applink" class="flat-input"></div>
+                        </div>
+                        <button onclick="saveSettings('general')" class="flat-btn mt-4 w-full">Save General Info</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="text-base font-bold text-orange-500 mb-4 pb-2 border-b border-dark-border">Payment Numbers (টাকা পাঠানোর নম্বর)</h3>
+                        <div class="space-y-3">
+                            <div><label class="block text-xs text-gray-400 mb-1">bKash Number</label><input type="text" id="set-bkash" class="flat-input"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">Nagad Number</label><input type="text" id="set-nagad" class="flat-input"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">Rocket Number</label><input type="text" id="set-rocket" class="flat-input"></div>
+                        </div>
+                        <button onclick="saveSettings('payment')" class="flat-btn mt-4 w-full">Save Payment Numbers</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="text-base font-bold text-orange-500 mb-4 pb-2 border-b border-dark-border">Social Links</h3>
+                        <div class="space-y-3">
+                            <div><label class="block text-xs text-gray-400 mb-1">WhatsApp Number (e.g. 88017...)</label><input type="text" id="set-whatsapp" class="flat-input"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">Telegram Link</label><input type="text" id="set-telegram" class="flat-input"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">Facebook Link</label><input type="text" id="set-facebook" class="flat-input"></div>
+                            <div><label class="block text-xs text-gray-400 mb-1">YouTube Link</label><input type="text" id="set-youtube" class="flat-input"></div>
+                        </div>
+                        <button onclick="saveSettings('social')" class="flat-btn mt-4 w-full">Save Social Links</button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="text-base font-bold text-orange-500 mb-4 pb-2 border-b border-dark-border">Add Money Video</h3>
+                        <div class="space-y-3">
+                            <div><label class="block text-xs text-gray-400 mb-1">How To Add Money (YouTube Video ID)</label><input type="text" id="set-tutorial-vid" class="flat-input" placeholder="e.g. dQw4w9WgXcQ"></div>
+                        </div>
+                        <button onclick="saveSettings('advanced')" class="flat-btn mt-4 w-full">Save Video Setting</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: SERVICES -->
+            <div id="view-services" class="view-section hidden">
+                <div class="card mb-5">
+                    <h3 class="text-base font-bold text-orange-500 mb-4">Add New Game / Service</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <input type="text" id="srv-name" placeholder="Game Name (e.g. Free Fire BD)" class="flat-input">
+                        <input type="text" id="srv-image" placeholder="Image URL" class="flat-input">
+                        <select id="srv-category" class="flat-input"></select>
+                        <select id="srv-type" class="flat-input">
+                            <option value="uid">UID TopUp (Manual)</option>
+                            <option value="code">Voucher Code</option>
+                        </select>
+                    </div>
+                    <textarea id="srv-rules" placeholder="Rules/Notice for this game" class="flat-input h-16 mb-3"></textarea>
+                    <button onclick="addService()" class="flat-btn w-full">Add Game</button>
+                </div>
+                <div class="flat-table-container">
+                    <table class="flat-table text-xs">
+                        <thead><tr><th class="w-16 text-center">Image</th><th>Name</th><th>Type</th><th class="w-36 text-center">Actions</th></tr></thead>
+                        <tbody id="srv-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: PRODUCTS -->
+            <div id="view-products" class="view-section hidden">
+                <button onclick="switchView('services')" class="flat-btn-outline mb-4 text-xs py-1.5 px-3"><i class="fas fa-arrow-left mr-1"></i> Back to Games</button>
+                <div class="card mb-5">
+                    <h3 class="text-base font-bold text-orange-500 mb-4">Add Recharge Package for: <span id="prod-service-name" class="text-white"></span></h3>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <input type="text" id="prod-name" placeholder="Package (e.g. 115 Diamonds)" class="flat-input flex-1">
+                        <input type="number" id="prod-price" placeholder="Price (৳)" class="flat-input w-full md:w-36">
+                        <button onclick="addProduct()" class="flat-btn">Add Package</button>
+                    </div>
+                </div>
+                <div class="flat-table-container">
+                    <table class="flat-table text-xs">
+                        <thead><tr><th>Package Name</th><th>Price</th><th class="w-24 text-center">Actions</th></tr></thead>
+                        <tbody id="prod-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: CATEGORIES -->
+            <div id="view-categories" class="view-section hidden">
+                <div class="card mb-5">
+                    <h3 class="text-base font-bold text-orange-500 mb-4">Add Category</h3>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <input type="text" id="cat-name" placeholder="Category Name" class="flat-input flex-1">
+                        <input type="number" id="cat-slot" placeholder="Sort Slot (1, 2, 3)" class="flat-input w-full md:w-36">
+                        <button onclick="addCategory()" class="flat-btn">Add Category</button>
+                    </div>
+                </div>
+                <div class="flat-table-container">
+                    <table class="flat-table text-xs">
+                        <thead><tr><th>Name</th><th>Slot</th><th class="w-20 text-center">Actions</th></tr></thead>
+                        <tbody id="cat-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: BANNERS -->
+            <div id="view-banners" class="view-section hidden">
+                <div class="card mb-5">
+                    <h3 class="text-base font-bold text-orange-500 mb-4">Add Home Slider Banner</h3>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <input type="text" id="ban-img" placeholder="Banner Image URL" class="flat-input flex-1">
+                        <button onclick="addBanner()" class="flat-btn">Add Banner</button>
+                    </div>
+                </div>
+                <div class="flat-table-container">
+                    <table class="flat-table text-xs">
+                        <thead><tr><th class="w-28 text-center">Preview</th><th>URL</th><th class="w-20 text-center">Actions</th></tr></thead>
+                        <tbody id="ban-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: TUTORIALS -->
+            <div id="view-tutorials" class="view-section hidden">
+                <div class="card mb-5">
+                    <h3 class="text-base font-bold text-orange-500 mb-4">Add Video Tutorial</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <input type="text" id="tut-title" placeholder="Title" class="flat-input">
+                        <input type="text" id="tut-link" placeholder="YouTube URL" class="flat-input">
+                        <input type="text" id="tut-thumb" placeholder="Thumbnail URL" class="flat-input">
+                    </div>
+                    <button onclick="addTutorial()" class="flat-btn w-full">Add Video</button>
+                </div>
+                <div class="flat-table-container">
+                    <table class="flat-table text-xs">
+                        <thead><tr><th class="w-20 text-center">Thumb</th><th>Title</th><th>Link</th><th class="w-20 text-center">Actions</th></tr></thead>
+                        <tbody id="tut-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- FIREBASE CONFIG (SAME AS YOUR TOPUP SITE) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFXTntDxeqk0t6JSAWREhnElaTuESsxxg",
+            authDomain: "topup-28130.firebaseapp.com",
+            databaseURL: "https://topup-28130-default-rtdb.firebaseio.com",
+            projectId: "topup-28130",
+            storageBucket: "topup-28130.firebasestorage.app",
+            messagingSenderId: "983872252283",
+            appId: "1:983872252283:web:7b770c53f4fe3c6a83f5de",
+            measurementId: "G-GBV4WQF67H"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let currentServiceId = null;
+        let currentServiceName = null;
+        let allUsers = [];
+        let allOrdersCache = [];
+
+        function showLoading() { document.getElementById('loading-spinner').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loading-spinner').style.display = 'none'; }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-backdrop').classList.toggle('hidden');
+        }
+
+        auth.onAuthStateChanged((user) => {
+            hideLoading();
+            if (user) {
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+                loadDashboardData();
+            } else {
+                document.getElementById('login-modal').style.display = 'flex';
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('main-content').classList.add('hidden');
+            }
+        });
+
+        function loginAdmin() {
+            const email = document.getElementById('admin-email').value.trim();
+            const pass = document.getElementById('admin-password').value.trim();
+            if (!email || !pass) return Swal.fire('Error', 'Email ও Password দিন', 'warning');
+            showLoading();
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => hideLoading())
+                .catch(err => { hideLoading(); Swal.fire('Login Error', err.message, 'error'); });
+        }
+
+        function logoutAdmin() { auth.signOut(); }
+
+        function switchView(viewId, param1 = null, param2 = null) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            
+            const viewEl = document.getElementById('view-' + viewId);
+            if(viewEl) viewEl.classList.remove('hidden');
+            
+            const navEl = document.getElementById('nav-' + viewId);
+            if(navEl) navEl.classList.add('active');
+
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebar-backdrop').classList.add('hidden');
+            }
+
+            document.getElementById('page-title').innerText = viewId.toUpperCase();
+
+            if(viewId === 'dashboard') loadDashboardData();
+            if(viewId === 'orders') loadOrders();
+            if(viewId === 'deposits') loadDeposits();
+            if(viewId === 'users') loadUsers();
+            if(viewId === 'settings') loadSettings();
+            if(viewId === 'services') loadServices();
+            if(viewId === 'categories') loadCategories();
+            if(viewId === 'banners') loadBanners();
+            if(viewId === 'tutorials') loadTutorials();
+            if(viewId === 'products') {
+                currentServiceId = param1;
+                currentServiceName = param2;
+                document.getElementById('prod-service-name').innerText = param2;
+                loadProducts();
+            }
+        }
+
+        function loadDashboardData() {
+            db.collection('users').onSnapshot(snap => document.getElementById('dash-users').innerText = snap.size);
+            db.collection('orders').onSnapshot(snap => {
+                document.getElementById('dash-orders').innerText = snap.size;
+                let rev = 0;
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if(d.status === 'success' || d.status === 'completed') rev += parseInt(d.price || 0);
+                });
+                document.getElementById('dash-revenue').innerText = '৳' + rev;
+            });
+            db.collection('deposits').where('status', '==', 'pending').onSnapshot(snap => {
+                document.getElementById('dash-deposits').innerText = snap.size;
+            });
+        }
+
+        // --- ORDERS LOGIC ---
+        function loadOrders() {
+            const filter = document.getElementById('order-filter').value;
+            let query = db.collection('orders').orderBy('date', 'desc').limit(100);
+            if(filter !== 'all') query = db.collection('orders').where('status', '==', filter).orderBy('date', 'desc').limit(100);
+            
+            query.onSnapshot(snap => {
+                allOrdersCache = [];
+                snap.forEach(doc => allOrdersCache.push({ id: doc.id, ...doc.data() }));
+                renderOrders(allOrdersCache);
+            });
+        }
+
+        function searchOrders() {
+            const q = (document.getElementById('order-search').value || '').toLowerCase().trim();
+            if(!q) return renderOrders(allOrdersCache);
+            const filtered = allOrdersCache.filter(o => 
+                (o.playerId || '').toLowerCase().includes(q) ||
+                (o.userName || '').toLowerCase().includes(q) ||
+                (o.playerNickname || '').toLowerCase().includes(q)
+            );
+            renderOrders(filtered);
+        }
+
+        function renderOrders(orders) {
+            const list = document.getElementById('order-list');
+            list.innerHTML = '';
+            if(!orders.length) {
+                list.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-500">কোন অর্ডার নেই</td></tr>`;
+                return;
+            }
+
+            orders.forEach(d => {
+                const date = d.date && d.date.toDate ? d.date.toDate().toLocaleDateString() : 'N/A';
+                const nick = d.playerNickname && d.playerNickname !== 'N/A' ? `<span class="text-emerald-400 block font-semibold text-[10px]">${d.playerNickname}</span>` : '';
+                const safeJson = encodeURIComponent(JSON.stringify(d));
+
+                list.innerHTML += `<tr>
+                    <td class="text-gray-400 whitespace-nowrap">${date}</td>
+                    <td>
+                        <span class="font-bold text-white block">${d.userName || 'User'}</span>
+                        <span class="text-[10px] text-gray-400 block">${d.userEmail || ''}</span>
+                    </td>
+                    <td>
+                        <span class="text-white block font-medium">${d.gameName || ''}</span>
+                        <span class="text-orange-400 font-bold">${d.productName || ''}</span>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-mono text-orange-400 font-bold select-all bg-dark-bg px-2 py-0.5 rounded border border-orange-500/30">${d.playerId || 'N/A'}</span>
+                            <button onclick="copyToClipboard('${d.playerId}')" class="text-gray-400 hover:text-white"><i class="far fa-copy"></i></button>
+                        </div>
+                        ${nick}
+                    </td>
+                    <td class="font-bold text-white">৳${d.price}</td>
+                    <td>
+                        <select onchange="updateOrderStatus('${d.id}', this.value)" class="flat-input text-[11px] py-1 px-2 border border-dark-border bg-dark-bg">
+                            <option value="pending" ${d.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="processing" ${d.status === 'processing' ? 'selected' : ''}>Processing</option>
+                            <option value="success" ${d.status === 'success' ? 'selected' : ''}>Success</option>
+                            <option value="cancel" ${d.status === 'cancel' ? 'selected' : ''}>Canceled</option>
+                        </select>
+                    </td>
+                    <td class="text-center whitespace-nowrap space-x-1">
+                        <button onclick="viewOrderDetails('${safeJson}')" class="flat-btn py-1 px-2 text-xs bg-sky-600"><i class="fas fa-eye"></i></button>
+                        <button onclick="deleteDoc('orders', '${d.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function updateOrderStatus(id, status) {
+            db.collection('orders').doc(id).update({ status }).then(() => {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Status Updated: ' + status, timer: 1000, showConfirmButton: false });
+            });
+        }
+
+        function viewOrderDetails(encoded) {
+            const d = JSON.parse(decodeURIComponent(encoded));
+            document.getElementById('order-details-content').innerHTML = `
+                <div class="p-3 bg-dark-bg rounded border border-dark-border space-y-1.5">
+                    <div><b>Order ID:</b> ${d.id}</div>
+                    <div><b>Game:</b> ${d.gameName} (${d.productName})</div>
+                    <div><b>Player UID:</b> <span class="text-orange-400 font-bold">${d.playerId}</span></div>
+                    <div><b>Player Nickname:</b> <span class="text-emerald-400">${d.playerNickname || 'N/A'}</span></div>
+                    <div><b>Price:</b> ৳${d.price}</div>
+                    <div><b>Customer:</b> ${d.userName} (${d.userEmail})</div>
+                    <div><b>Phone:</b> ${d.userPhone || 'N/A'}</div>
+                    <div><b>Status:</b> ${d.status}</div>
+                </div>`;
+            document.getElementById('order-details-modal').classList.remove('hidden');
+        }
+        function closeOrderModal() { document.getElementById('order-details-modal').classList.add('hidden'); }
+
+        // --- DEPOSITS & APPROVE ---
+        function loadDeposits() {
+            db.collection('deposits').orderBy('date', 'desc').limit(50).onSnapshot(snap => {
+                const list = document.getElementById('deposit-list');
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const date = d.date && d.date.toDate ? d.date.toDate().toLocaleDateString() : 'N/A';
+                    let act = '';
+                    if(d.status === 'pending') {
+                        act = `<div class="flex justify-center gap-1.5">
+                                <button onclick="approveDeposit('${doc.id}', '${d.userId}', ${d.amount})" class="flat-btn bg-emerald-600 py-1 px-2 text-xs"><i class="fas fa-check"></i></button>
+                                <button onclick="rejectDeposit('${doc.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-times"></i></button>
+                               </div>`;
+                    } else {
+                        act = `<button onclick="deleteDoc('deposits', '${doc.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-trash"></i></button>`;
+                    }
+
+                    list.innerHTML += `<tr>
+                        <td class="text-gray-400">${date}</td>
+                        <td class="font-medium text-white">${d.userEmail}</td>
+                        <td>${d.method}</td>
+                        <td class="font-mono text-orange-400 font-bold">${d.trxId}</td>
+                        <td class="font-bold text-white">৳${d.amount}</td>
+                        <td><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${d.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${d.status}</span></td>
+                        <td class="text-center">${act}</td>
+                    </tr>`;
+                });
+            });
+        }
+
+        async function approveDeposit(depId, userId, amount) {
+            const confirm = await Swal.fire({ title: `৳${amount} টাকা ব্যালেন্স যোগ করবেন?`, icon: 'question', showCancelButton: true });
+            if (confirm.isConfirmed) {
+                showLoading();
+                const uRef = db.collection('users').doc(userId);
+                const dRef = db.collection('deposits').doc(depId);
+                try {
+                    await db.runTransaction(async t => {
+                        const uDoc = await t.get(uRef);
+                        const cur = uDoc.data()?.balance || 0;
+                        t.update(uRef, { balance: cur + amount });
+                        t.update(dRef, { status: 'approved' });
+                    });
+                    hideLoading();
+                    Swal.fire('Approved!', 'ব্যালেন্স সফলভাবে যোগ হয়েছে।', 'success');
+                } catch(e) {
+                    hideLoading();
+                    Swal.fire('Error', e.message, 'error');
+                }
+            }
+        }
+
+        function rejectDeposit(depId) {
+            db.collection('deposits').doc(depId).update({ status: 'rejected' });
+        }
+
+        // --- USERS & EDIT BALANCE ---
+        function loadUsers() {
+            db.collection('users').orderBy('createdAt', 'desc').limit(100).onSnapshot(snap => {
+                allUsers = [];
+                snap.forEach(d => allUsers.push({ id: d.id, ...d.data() }));
+                renderUsers(allUsers);
+            });
+        }
+
+        function searchUsers() {
+            const q = document.getElementById('user-search').value.toLowerCase();
+            renderUsers(allUsers.filter(u => (u.email || '').toLowerCase().includes(q) || (u.name || '').toLowerCase().includes(q)));
+        }
+
+        function renderUsers(users) {
+            const list = document.getElementById('user-list');
+            list.innerHTML = '';
+            users.forEach(u => {
+                list.innerHTML += `<tr>
+                    <td class="text-gray-400">${u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString() : 'N/A'}</td>
+                    <td class="font-bold text-white">${u.name || 'User'}</td>
+                    <td>${u.email}</td>
+                    <td class="font-bold text-orange-400">৳${u.balance || 0}</td>
+                    <td class="text-center">
+                        <button onclick="editBalance('${u.id}', ${u.balance || 0})" class="flat-btn py-1 px-2.5 text-xs"><i class="fas fa-edit mr-1"></i>Edit</button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        async function editBalance(uid, cur) {
+            const { value: val } = await Swal.fire({
+                title: 'ব্যালেন্স পরিবর্তন করুন',
+                input: 'number',
+                inputValue: cur,
+                showCancelButton: true
+            });
+            if(val !== undefined) {
+                db.collection('users').doc(uid).update({ balance: parseInt(val) });
+            }
+        }
+
+        // --- SETTINGS LOGIC ---
+        function loadSettings() {
+            db.collection('settings').doc('general').get().then(doc => {
+                if(doc.exists) {
+                    const d = doc.data();
+                    document.getElementById('set-sitename').value = d.siteName || '';
+                    document.getElementById('set-logo').value = d.logoUrl || '';
+                    document.getElementById('set-notice').value = d.notice || '';
+                    document.getElementById('set-applink').value = d.appLink || '';
+                    document.getElementById('set-whatsapp').value = d.whatsapp || '';
+                    document.getElementById('set-telegram').value = d.telegram || '';
+                    document.getElementById('set-facebook').value = d.facebook || '';
+                    document.getElementById('set-youtube').value = d.youtube || '';
+                }
+            });
+            db.collection('admin').doc('payment').get().then(doc => {
+                if(doc.exists) {
+                    const d = doc.data();
+                    document.getElementById('set-bkash').value = d.bKash || '';
+                    document.getElementById('set-nagad').value = d.Nagad || '';
+                    document.getElementById('set-rocket').value = d.Rocket || '';
+                }
+            });
+            db.collection('settings').doc('videos').get().then(doc => {
+                if(doc.exists) document.getElementById('set-tutorial-vid').value = doc.data().howToAddMoney || '';
+            });
+        }
+
+        function saveSettings(type) {
+            showLoading();
+            let p;
+            if(type === 'general') {
+                p = db.collection('settings').doc('general').set({
+                    siteName: document.getElementById('set-sitename').value,
+                    logoUrl: document.getElementById('set-logo').value,
+                    notice: document.getElementById('set-notice').value,
+                    appLink: document.getElementById('set-applink').value
+                }, { merge: true });
+            } else if(type === 'payment') {
+                p = db.collection('admin').doc('payment').set({
+                    bKash: document.getElementById('set-bkash').value,
+                    Nagad: document.getElementById('set-nagad').value,
+                    Rocket: document.getElementById('set-rocket').value
+                }, { merge: true });
+            } else if(type === 'social') {
+                p = db.collection('settings').doc('general').set({
+                    whatsapp: document.getElementById('set-whatsapp').value,
+                    telegram: document.getElementById('set-telegram').value,
+                    facebook: document.getElementById('set-facebook').value,
+                    youtube: document.getElementById('set-youtube').value
+                }, { merge: true });
+            } else if(type === 'advanced') {
+                p = db.collection('settings').doc('videos').set({
+                    howToAddMoney: document.getElementById('set-tutorial-vid').value
+                }, { merge: true });
+            }
+            p.then(() => { hideLoading(); Swal.fire('Saved!', 'তথ্য সেভ হয়েছে', 'success'); });
+        }
+
+        // --- SERVICES & PRODUCTS ---
+        function loadServices() {
+            db.collection('services').onSnapshot(snap => {
+                const list = document.getElementById('srv-list');
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    list.innerHTML += `<tr>
+                        <td class="text-center"><img src="${d.image}" class="h-10 w-10 object-cover rounded mx-auto"></td>
+                        <td class="font-bold text-white">${d.name}</td>
+                        <td class="uppercase text-orange-400 font-semibold">${d.type}</td>
+                        <td class="text-center space-x-1">
+                            <button onclick="switchView('products', '${doc.id}', '${d.name}')" class="flat-btn py-1 px-2 text-xs">Packages</button>
+                            <button onclick="deleteDoc('services', '${doc.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            });
+            // Load Categories Dropdown
+            db.collection('categories').orderBy('slot').get().then(snap => {
+                const drop = document.getElementById('srv-category');
+                drop.innerHTML = '<option value="">Category সিলেক্ট করুন</option>';
+                snap.forEach(d => drop.innerHTML += `<option value="${d.id}">${d.data().name}</option>`);
+            });
+        }
+
+        function addService() {
+            const name = document.getElementById('srv-name').value;
+            const image = document.getElementById('srv-image').value;
+            const catId = document.getElementById('srv-category').value;
+            const type = document.getElementById('srv-type').value;
+            const rules = document.getElementById('srv-rules').value;
+            if(!name) return Swal.fire('Error', 'গেমের নাম লিখুন', 'warning');
+            db.collection('services').add({ name, image, categoryId: catId, type, rules }).then(() => {
+                document.getElementById('srv-name').value = '';
+                document.getElementById('srv-image').value = '';
+                Swal.fire('Success', 'Game Added!', 'success');
+            });
+        }
+
+        function loadProducts() {
+            if(!currentServiceId) return;
+            db.collection('services').doc(currentServiceId).collection('products').orderBy('price', 'asc').onSnapshot(snap => {
+                const list = document.getElementById('prod-list');
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    list.innerHTML += `<tr>
+                        <td class="font-bold text-white">${d.name}</td>
+                        <td class="text-orange-400 font-bold">৳${d.price}</td>
+                        <td class="text-center">
+                            <button onclick="deleteProduct('${doc.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            });
+        }
+
+        function addProduct() {
+            const name = document.getElementById('prod-name').value;
+            const price = parseInt(document.getElementById('prod-price').value);
+            if(!name || !price) return;
+            db.collection('services').doc(currentServiceId).collection('products').add({ name, price }).then(() => {
+                document.getElementById('prod-name').value = '';
+                document.getElementById('prod-price').value = '';
+            });
+        }
+
+        function deleteProduct(id) {
+            db.collection('services').doc(currentServiceId).collection('products').doc(id).delete();
+        }
+
+        // --- CATEGORIES, BANNERS, TUTORIALS ---
+        function loadCategories() {
+            db.collection('categories').orderBy('slot').onSnapshot(snap => {
+                const list = document.getElementById('cat-list');
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    list.innerHTML += `<tr>
+                        <td class="font-bold text-white">${doc.data().name}</td>
+                        <td>${doc.data().slot}</td>
+                        <td class="text-center"><button onclick="deleteDoc('categories', '${doc.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-trash"></i></button></td>
+                    </tr>`;
+                });
+            });
+        }
+
+        function addCategory() {
+            const name = document.getElementById('cat-name').value;
+            const slot = parseInt(document.getElementById('cat-slot').value || 1);
+            if(!name) return;
+            db.collection('categories').add({ name, slot }).then(() => {
+                document.getElementById('cat-name').value = '';
+                document.getElementById('cat-slot').value = '';
+            });
+        }
+
+        function loadBanners() {
+            db.collection('banners').onSnapshot(snap => {
+                const list = document.getElementById('ban-list');
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    list.innerHTML += `<tr>
+                        <td><img src="${doc.data().image}" class="h-10 w-24 object-cover rounded mx-auto"></td>
+                        <td class="text-gray-400 break-all">${doc.data().image}</td>
+                        <td class="text-center"><button onclick="deleteDoc('banners', '${doc.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-trash"></i></button></td>
+                    </tr>`;
+                });
+            });
+        }
+
+        function addBanner() {
+            const image = document.getElementById('ban-img').value;
+            if(!image) return;
+            db.collection('banners').add({ image }).then(() => document.getElementById('ban-img').value = '');
+        }
+
+        function loadTutorials() {
+            db.collection('tutorials').onSnapshot(snap => {
+                const list = document.getElementById('tut-list');
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    list.innerHTML += `<tr>
+                        <td><img src="${doc.data().thumbnail}" class="h-8 w-14 object-cover rounded mx-auto"></td>
+                        <td>${doc.data().title}</td>
+                        <td class="text-orange-400">${doc.data().link}</td>
+                        <td class="text-center"><button onclick="deleteDoc('tutorials', '${doc.id}')" class="flat-btn flat-btn-danger py-1 px-2 text-xs"><i class="fas fa-trash"></i></button></td>
+                    </tr>`;
+                });
+            });
+        }
+
+        function addTutorial() {
+            const title = document.getElementById('tut-title').value;
+            const link = document.getElementById('tut-link').value;
+            const thumbnail = document.getElementById('tut-thumb').value;
+            if(!title || !link) return;
+            db.collection('tutorials').add({ title, link, thumbnail }).then(() => {
+                document.getElementById('tut-title').value = '';
+                document.getElementById('tut-link').value = '';
+                document.getElementById('tut-thumb').value = '';
+            });
+        }
+
+        function deleteDoc(col, id) {
+            Swal.fire({ title: 'মুছে ফেলতে চান?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626' }).then(r => {
+                if(r.isConfirmed) db.collection(col).doc(id).delete();
+            });
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'UID Copied!', timer: 1000, showConfirmButton: false });
+        }
+    </script>
+</body>
+</html>
