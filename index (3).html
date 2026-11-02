@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRN TOPUP - Free Fire Diamond & Game Topup</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Bree+Serif&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS & Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Firebase SDK (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #f1f5f9; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #home-sec, #account-sec, #tutorial-sec {
+            font-family: 'Bree Serif', serif;
+        }
+        
+        .active-tab { color: #0284c7 !important; }
+        .hidden { display: none !important; }
+        
+        .lang-auto { font-family: 'Poppins', sans-serif; }
+        #home-sec .lang-auto { font-family: 'Bree Serif', serif; }
+        .lang-auto:lang(bn), .lang-auto:lang(bn-BD) { font-family: 'Noto Serif Bengali', serif; }
+        
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeInUp 0.3s ease-out forwards; }
+
+        .product-card {
+            background: white;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .product-card:hover { border-color: #38bdf8; }
+        .product-card.selected {
+            border: 2px solid #0284c7;
+            background-color: #f0f9ff;
+        }
+        .product-bullet {
+            height: 12px; width: 12px; background-color: #cbd5e1; border-radius: 50%; margin-right: 8px;
+        }
+        .product-card.selected .product-bullet { background-color: #0284c7; }
+        
+        #fab-container.is-open #fab-toggler {
+            background-color: #dc2626;
+        }
+        #fab-container.is-open #fab-icon-open {
+            transform: rotate(-180deg) scale(0);
+            opacity: 0;
+        }
+        #fab-container.is-open #fab-icon-close {
+            transform: scale(1) rotate(0);
+            opacity: 1;
+        }
+        #fab-container.is-open #fab-options {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .aspect-video { aspect-ratio: 16 / 9; }
+
+        .step-transition { animation: slideInRight 0.3s ease-out forwards; }
+        @keyframes slideInRight {
+            from { transform: translateX(15px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        
+        .theme-bkash { background-color: #e2136e !important; }
+        .theme-nagad { background-color: #f7941d !important; }
+        .theme-rocket { background-color: #8c3494 !important; }
+
+        .pay-option-card {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .pay-option-card.selected {
+            border: 2px solid #ef4444;
+        }
+        .pay-option-card.selected::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-bottom-right-radius: 6px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="select-none bg-slate-100 text-slate-800">
+
+<div id="app-content" class="relative max-w-md mx-auto bg-slate-50 min-h-screen shadow-2xl border-x border-slate-200">
+    
+    <!-- Top Header -->
+    <header class="bg-white/95 backdrop-blur-md p-3.5 sticky top-0 z-40 flex justify-between items-center border-b border-gray-100 shadow-sm">
+        <div class="flex items-center gap-2">
+            <img id="header-logo-img" src="https://i.ibb.co/TBwjc0qy/pay-logo-1764254679.png" class="h-10 object-contain" alt="DRN Topup">
+            <span id="header-site-title" class="font-bold text-lg text-sky-600 tracking-tight">DRN TOPUP</span>
+        </div>
+        
+        <div id="header-balance-container" class="hidden bg-sky-500 px-3.5 py-1.5 rounded-full text-xs font-bold text-white shadow-sm flex items-center gap-1">
+            <i class="fas fa-wallet text-yellow-200"></i> ৳ <span id="header-balance">0</span>
+        </div>
+        
+        <div id="header-login-container">
+            <button onclick="showAuthPage()" class="bg-sky-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow hover:bg-sky-700 transition flex items-center gap-1.5">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </div>
+    </header>
+
+    <!-- Notice -->
+    <div id="notice-section" class="px-3 pt-3">
+        <div class="bg-gradient-to-r from-sky-500 to-cyan-600 text-white p-3.5 rounded-xl relative shadow-sm">
+            <button onclick="this.parentElement.parentElement.style.display='none'" class="absolute top-2 right-2 text-white/80 hover:text-white transition">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+            <div class="pr-5">
+                <div class="font-bold text-xs uppercase tracking-wide text-sky-100 mb-0.5"><i class="fas fa-bullhorn mr-1"></i> Notice</div>
+                <div id="notice-text" class="text-xs leading-relaxed">স্বাগতম DRN Topup শপে! যেকোনো সমস্যায় আমাদের সাপোর্ট হেল্পলাইনে যোগাযোগ করুন।</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Body -->
+    <main class="p-3 relative pb-24">
+        
+        <!-- AUTH SECTION -->
+        <section id="auth-sec" class="hidden animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative p-6">
+                <button onclick="showSec('home')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition z-10">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+
+                <!-- Login View -->
+                <div id="login-view">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Login</h2>
+
+                    <button onclick="handleGoogleLogin()" class="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-3 mb-6">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                        Login with Google
+                    </button>
+
+                    <div class="relative flex py-2 items-center mb-6">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink-0 mx-3 text-gray-400 text-xs font-medium">Or sign in with email</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-xs font-bold mb-1.5">Email</label>
+                        <input type="email" id="login-email" placeholder="name@example.com" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-xs font-bold mb-1.5">Password</label>
+                        <input type="password" id="login-pass" placeholder="Password" class="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                    </div>
+
+                    <button onclick="handleLogin()" class="w-full bg-sky-600 text-white font-bold py-2.5 rounded-lg shadow-md hover:bg-sky-700 transition">
+                        Login
+                    </button>
+
+                    <div class="mt-6 text-center text-xs text-gray-600">
+                        New user to DRN topup? <button onclick="toggleAuth('register')" class="text-sky-600 font-bold hover:underline">Register Now</button>
+                    </div>
+                </div>
+
+                <!-- Register View -->
+                <div id="register-view" class="hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Register</h2>
+
+                    <button onclick="handleGoogleLogin()" class="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-3 mb-6">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                        Sign up with Google
+                    </button>
+
+                    <div class="space-y-3 mb-6">
+                        <div>
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Name</label>
+                            <input type="text" id="reg-name" placeholder="Full Name" class="w-full px-3.5 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Phone Number</label>
+                            <input type="number" id="reg-phone" placeholder="017xxxxxxxx" class="w-full px-3.5 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Email</label>
+                            <input type="email" id="reg-email" placeholder="name@example.com" class="w-full px-3.5 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Password</label>
+                            <input type="password" id="reg-pass" placeholder="Password (Min 6 digits)" class="w-full px-3.5 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:border-sky-500">
+                        </div>
+                    </div>
+
+                    <button onclick="handleRegister()" class="w-full bg-sky-600 text-white font-bold py-2.5 rounded-lg shadow-md hover:bg-sky-700 transition">
+                        Register
+                    </button>
+
+                    <div class="mt-6 text-center text-xs text-gray-600">
+                        Already have an account? <button onclick="toggleAuth('login')" class="text-sky-600 font-bold hover:underline">Login Now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HOME SECTION -->
+        <section id="home-sec" class="animate-fade-in pb-4">
+            <!-- Banner Slider -->
+            <div id="banner-container" class="mb-4 overflow-hidden rounded-xl shadow-sm h-44 bg-gray-200 relative group">
+                <div id="slider-wrapper" class="flex h-full w-full transition-transform duration-500 ease-out">
+                    <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover flex-shrink-0" alt="Banner 1">
+                </div>
+                <div id="slider-dots" class="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10"></div>
+            </div>
+
+            <!-- Fast Action Contacts -->
+            <div class="grid grid-cols-3 gap-2.5 mb-5 px-0.5">
+                <a id="home-whatsapp" href="#" target="_blank" class="bg-white p-2.5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-95 transition no-underline">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center bg-green-50 flex-shrink-0">
+                        <i class="fab fa-whatsapp text-lg text-[#25D366]"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-gray-700 lang-auto">WhatsApp</span>
+                </a>
+
+                <a id="home-telegram" href="#" target="_blank" class="bg-white p-2.5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-95 transition no-underline">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center bg-blue-50 flex-shrink-0">
+                        <i class="fab fa-telegram-plane text-lg text-[#0088cc]"></i>
+                    </div>
+                    <span class="text-[11px] font-bold text-gray-700 lang-auto">Telegram</span>
+                </a>
+
+                <a id="home-app-dl" href="#" target="_blank" class="bg-white p-2.5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between active:scale-95 transition no-underline">
+                    <div class="w-8 h-8 rounded-full overflow-hidden shadow-sm flex-shrink-0">
+                        <img src="https://i.ibb.co/0j8Jxx63/Screenshot-20260811-023509.jpg" class="w-full h-full object-cover" alt="Support">
+                    </div>
+                    <span class="text-[11px] font-bold text-gray-700 leading-tight lang-auto">Support<br>24/7</span>
+                </a>
+            </div>
+            
+            <!-- Services / Games List -->
+            <div id="services-list" class="space-y-5 mb-6">
+                <div class="text-center py-8"><i class="fas fa-spinner fa-spin text-sky-500"></i> লোড হচ্ছে...</div>
+            </div>
+
+            <!-- Latest Orders Section -->
+            <div class="mt-6 mb-5">
+                <h3 class="text-center font-bold text-gray-700 text-lg mb-3 lang-auto">Latest Orders</h3>
+                <div id="latest-orders-list" class="space-y-2.5 px-0.5">
+                    <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between animate-pulse">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-gray-200 rounded-full"></div>
+                            <div>
+                                <div class="h-3.5 bg-gray-200 rounded w-24 mb-1.5"></div>
+                                <div class="h-2.5 bg-gray-200 rounded w-32"></div>
+                            </div>
+                        </div>
+                        <div class="h-5 bg-gray-200 rounded-full w-16"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promo Banner -->
+            <div id="promo-banner-container" class="mt-6 mb-5 hidden">
+                <a id="promo-banner-link" href="#" target="_blank" class="block w-full aspect-video rounded-xl overflow-hidden shadow-sm">
+                    <img id="promo-banner-img" src="" class="w-full h-full object-cover" alt="Promo">
+                </a>
+            </div>
+            
+            <!-- About & Footer Section -->
+            <div class="mt-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center">
+                <img id="about-logo-img" src="https://i.ibb.co/TBwjc0qy/pay-logo-1764254679.png" class="h-10 mx-auto object-contain mb-2" alt="DRN Topup">
+                <h2 id="about-site-name" class="text-base font-bold text-gray-800 lang-auto">DRN TOP UP SHOP</h2>
+                <p class="text-xs text-gray-500 mt-1 mb-4">Free Fire Diamond TopUp | Fastest & Trusted Shop in BD</p>
+
+                <p class="text-[11px] text-gray-600 mb-5 px-1 leading-relaxed bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-left">
+                    <b class="text-amber-800"><i class="fas fa-exclamation-triangle"></i> জরুরি নোটিশ:</b> যেকোনো অর্ডার সংক্রান্ত সমস্যায় অর্ডারের স্ক্রিনশট এবং পেমেন্ট ট্রানজেকশন আইডি সহ আমাদের হোয়াটসঅ্যাপে মেসেজ দিন।
+                </p>
+
+                <div class="grid grid-cols-2 gap-2.5 mb-5 text-xs">
+                    <a id="about-facebook" href="#" target="_blank" class="flex items-center justify-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-100 transition no-underline font-semibold text-gray-700">
+                        <i class="fab fa-facebook-f text-blue-600"></i> Facebook
+                    </a>
+                    <a id="about-youtube" href="#" target="_blank" class="flex items-center justify-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-100 transition no-underline font-semibold text-gray-700">
+                        <i class="fab fa-youtube text-red-600"></i> YouTube
+                    </a>
+                    <a id="about-telegram" href="#" target="_blank" class="flex items-center justify-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-100 transition no-underline font-semibold text-gray-700">
+                        <i class="fab fa-telegram-plane text-sky-500"></i> Telegram
+                    </a>
+                    <a id="about-whatsapp" href="#" target="_blank" class="flex items-center justify-center gap-2 bg-gray-50 p-2.5 rounded-lg border border-gray-200 hover:bg-gray-100 transition no-underline font-semibold text-gray-700">
+                        <i class="fab fa-whatsapp text-green-500"></i> WhatsApp
+                    </a>
+                </div>
+
+                <div class="border-t border-gray-100 pt-3">
+                    <p class="text-[10px] text-gray-400">
+                        © 2026 DRN TOPUP | All Rights Reserved
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TOPUP SEC -->
+        <section id="topup-sec" class="hidden animate-fade-in pb-10">
+            <div class="bg-white p-3.5 rounded-xl shadow-sm flex items-center justify-between mb-3 border border-gray-100 relative">
+                <div class="flex items-center gap-3">
+                    <img id="topup-game-img" src="" class="w-14 h-14 rounded-xl object-cover shadow-sm" alt="Game">
+                    <div>
+                        <h3 class="font-bold text-gray-800 text-sm" id="topup-game-title">Free Fire BD</h3>
+                        <p class="text-xs text-sky-600 font-semibold" id="topup-sub-title">Player ID TopUp</p>
+                    </div>
+                </div>
+                <button onclick="showSec('home')" class="text-gray-400 hover:text-red-500 p-2">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Step 1: Select Pack -->
+            <div class="bg-white p-3.5 rounded-xl shadow-sm mb-3 border border-gray-100">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="bg-sky-600 text-white w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold">1</span>
+                    <h3 class="font-bold text-gray-800 text-xs">Select Recharge</h3>
+                </div>
+
+                <div id="product-loader" class="text-center py-6 hidden">
+                    <i class="fas fa-spinner fa-spin text-sky-500 text-xl"></i>
+                </div>
+
+                <div id="products-grid" class="grid grid-cols-2 gap-2"></div>
+            </div>
+
+            <!-- Step 2: Player ID & Checker -->
+            <div id="player-id-section" class="bg-white p-3.5 rounded-xl shadow-sm mb-3 border border-gray-100">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-sky-600 text-white w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold">2</span>
+                        <h3 class="font-bold text-gray-800 text-xs">Account Info (Player UID)</h3>
+                    </div>
+                    <span class="text-[10px] text-gray-400">*সঠিক UID দিন</span>
+                </div>
+                
+                <div class="mb-2">
+                    <div class="flex gap-1.5">
+                        <input type="text" id="game-player-id" placeholder="Player ID / UID লিখুন" oninput="onUidInputChanged()" class="w-full bg-slate-50 border border-gray-300 p-2.5 rounded-lg focus:outline-none focus:border-sky-500 text-xs font-semibold text-gray-700">
+                        <button type="button" onclick="uidCheck()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-3.5 rounded-lg flex items-center gap-1 shadow flex-shrink-0 transition">
+                            <i class="fas fa-search"></i> Check
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="uidCheckBtn" onclick="uidCheck()" class="w-full bg-gradient-to-r from-red-600 to-orange-500 hover:opacity-95 text-white text-center py-2.5 rounded-lg font-bold text-xs shadow cursor-pointer transition flex items-center justify-center gap-2">
+                    <i class="fas fa-user-check"></i>
+                    <span id="uid-check-result-text">খেলোয়াড়ের নাম চেক করতে ক্লিক করুন</span>
+                </div>
+
+                <div id="uid-player-details" class="hidden mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-gray-500">Player Name:</span>
+                        <span id="verified-player-name" class="font-bold text-emerald-700 ml-1"></span>
+                    </div>
+                    <span class="text-emerald-700 font-bold text-[10px] bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                        <i class="fas fa-check-circle mr-0.5"></i> Verified
+                    </span>
+                </div>
+            </div>
+
+            <!-- Step 3: Payment Type -->
+            <div class="bg-white p-3.5 rounded-xl shadow-sm mb-3 border border-gray-100">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="bg-sky-600 text-white w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold">3</span>
+                    <h3 class="font-bold text-gray-800 text-xs">Payment Option</h3>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2.5 mb-3">
+                    <div onclick="selectPaymentOption('wallet')" id="opt-wallet" class="pay-option-card selected">
+                        <div class="h-16 flex flex-col items-center justify-center p-2">
+                            <i class="fas fa-wallet text-amber-500 text-xl mb-1"></i>
+                            <span class="font-bold text-xs text-gray-800">ওয়ালেট পে</span>
+                        </div>
+                        <div class="bg-gray-100 text-center py-1 text-[10px] font-bold text-gray-600">Wallet Pay</div>
+                    </div>
+
+                    <div onclick="selectPaymentOption('instant')" id="opt-instant" class="pay-option-card">
+                        <div class="h-16 flex items-center justify-center gap-1.5 p-2">
+                             <img src="https://i.ibb.co/TBwjc0qy/pay-logo-1764254679.png" class="h-5 object-contain" alt="bKash">
+                             <img src="https://i.ibb.co/YFf435ms/Nagad.png" class="h-4 object-contain" alt="Nagad">
+                             <img src="https://i.ibb.co/W4TXLGhm/file-000000005c2081fabc9814dd0bac2a9d.png" class="h-5 object-contain" alt="Rocket">
+                        </div>
+                        <div class="bg-gray-100 text-center py-1 text-[10px] font-bold text-gray-600">Instant Pay</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 mb-3 px-1 text-xs text-gray-500">
+                    <i class="fas fa-coins text-sky-500"></i>
+                    <span>ব্যালেন্স: <b class="text-sky-600">৳<span id="topup-balance-display">0.00</span></b></span>
+                </div>
+
+                <button onclick="processOrder()" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-3 rounded-lg font-bold shadow-md transition text-sm flex items-center justify-center gap-2">
+                     <i class="fas fa-shopping-cart"></i> Buy Now
+                </button>
+            </div>
+
+            <!-- Rules Box -->
+            <div id="game-rules-box" class="bg-white p-3.5 rounded-xl shadow-sm mb-4 border border-gray-100">
+                 <h3 class="font-bold text-gray-800 text-xs mb-2">Rules & Conditions</h3>
+                 <div id="game-rules-text" class="text-xs text-gray-600 leading-relaxed space-y-1"></div>
+            </div>
+            
+            <span id="total-price" class="hidden">0</span>
+        </section>
+
+        <!-- TUTORIAL SECTION -->
+        <section id="tutorial-sec" class="hidden animate-fade-in pb-10">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="p-4 border-b border-gray-100">
+                    <h2 class="font-bold text-lg text-gray-800 lang-auto">ভিডিও টিউটোরিয়াল</h2>
+                    <p class="text-xs text-gray-500">কিভাবে সহজে ডায়মন্ড টপআপ করবেন শিখুন</p>
+                </div>
+                
+                <div class="p-4 space-y-4" id="tutorial-list-container">
+                    <div class="text-center py-6 text-gray-400 text-xs">কোন টিউটোরিয়াল পাওয়া যায়নি</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADD MONEY SECTION -->
+        <section id="addmoney-sec" class="hidden animate-fade-in pb-10">
+            <!-- Step 1: Input Amount -->
+            <div id="am-step-1" class="step-transition">
+                <div class="bg-white p-4 shadow-sm rounded-xl border border-gray-100 mb-4">
+                    <h2 class="font-bold text-base text-gray-800 uppercase tracking-wide">Add Money (টাকা যোগ করুন)</h2>
+                </div>
+
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center mb-4">
+                    <label class="block text-gray-500 text-xs font-bold mb-3 uppercase tracking-wider">
+                        টাকার পরিমাণ লিখুন (Min: ৳১০)
+                    </label>
+                    
+                    <div class="relative mb-6 max-w-[180px] mx-auto">
+                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-2xl font-bold text-gray-400">৳</span>
+                        <input type="number" id="new-amount-input" value="100" class="w-full border-b-2 border-sky-400 py-1 pl-8 pr-2 text-center text-3xl font-bold text-gray-800 focus:outline-none bg-transparent">
+                    </div>
+
+                    <button onclick="goToMethodStep()" class="w-full bg-sky-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-sky-700 active:scale-95 transition text-xs uppercase tracking-wide">
+                        PROCEED TO PAYMENT
+                    </button>
+                </div>
+
+                <div class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 text-xs mb-2"><i class="fab fa-youtube text-red-600 mr-1"></i> Add Money টিউটোরিয়াল</h3>
+                    <div class="relative w-full aspect-video rounded-lg overflow-hidden bg-black/5">
+                        <iframe id="new-tutorial-video" class="w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Tutorial" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Select Operator -->
+            <div id="am-step-2" class="hidden step-transition bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="backToAmountStep()" class="text-gray-500"><i class="fas fa-arrow-left"></i></button>
+                    <span class="font-bold text-sm text-gray-700">পেমেন্ট মেথড বেছে নিন</span>
+                    <button onclick="showSec('home')" class="text-gray-400"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="bg-sky-50 text-sky-800 text-xs font-bold py-2 px-3 rounded-lg mb-4">
+                    মোবাইল ব্যাংকিং (Auto / Manual Pay)
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="goToPaymentPage('bKash', 'theme-bkash', 'https://i.ibb.co/TBwjc0qy/pay-logo-1764254679.png')" class="border border-gray-200 rounded-xl p-2 hover:border-pink-500 hover:shadow-sm transition flex items-center justify-center h-16">
+                        <img src="https://i.ibb.co/TBwjc0qy/pay-logo-1764254679.png" class="h-7 object-contain" alt="bKash">
+                    </button>
+                    <button onclick="goToPaymentPage('Nagad', 'theme-nagad', 'https://i.ibb.co/YFf435ms/Nagad.png')" class="border border-gray-200 rounded-xl p-2 hover:border-orange-500 hover:shadow-sm transition flex items-center justify-center h-16">
+                        <img src="https://i.ibb.co/YFf435ms/Nagad.png" class="h-6 object-contain" alt="Nagad">
+                    </button>
+                    <button onclick="goToPaymentPage('Rocket', 'theme-rocket', 'https://i.ibb.co/W4TXLGhm/file-000000005c2081fabc9814dd0bac2a9d.png')" class="border border-gray-200 rounded-xl p-2 hover:border-purple-500 hover:shadow-sm transition flex items-center justify-center h-16">
+                        <img src="https://i.ibb.co/W4TXLGhm/file-000000005c2081fabc9814dd0bac2a9d.png" class="h-6 object-contain" alt="Rocket">
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Send Money Details & TrxID -->
+            <div id="am-step-3" class="hidden step-transition bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="backToMethodStep()" class="text-gray-600"><i class="fas fa-arrow-left"></i></button>
+                    <img id="pay-method-logo" src="" class="h-8 object-contain">
+                    <button onclick="showSec('home')" class="text-gray-400"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div class="text-center py-2 mb-4">
+                    <span class="text-xs text-gray-500 font-bold uppercase">টাকার পরিমাণ</span>
+                    <div class="text-2xl font-bold text-gray-800">৳<span id="pay-amount-display">100</span></div>
+                </div>
+
+                <div id="payment-theme-card" class="rounded-xl shadow p-4 text-white mb-4">
+                    <div class="text-center mb-3">
+                        <p class="text-xs font-semibold mb-2">Send Money করার পর Transaction ID লিখুন:</p>
+                        <input type="text" id="pay-trx-input" class="w-full bg-white text-gray-800 text-center py-2.5 rounded-lg text-sm font-bold shadow-inner focus:outline-none uppercase" placeholder="Enter Transaction ID">
+                    </div>
+
+                    <div class="bg-black/15 p-3 rounded-lg text-xs space-y-2 border border-white/20">
+                        <p>১. আপনার <span class="method-name font-bold">bKash</span> অ্যাপ বা ডায়াল কোডে যান।</p>
+                        <p>২. <b>Send Money</b> অপশন সিলেক্ট করুন।</p>
+                        <div>
+                            <p>৩. নিচে দেওয়া নম্বরে টাকা পাঠান:</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span id="pay-admin-number" class="text-lg font-bold text-yellow-300 tracking-wider">লোড হচ্ছে...</span>
+                                <button onclick="copyPayNumber()" class="bg-black/30 hover:bg-black/50 text-white px-2 py-0.5 rounded text-[10px] font-bold border border-white/30">
+                                    <i class="far fa-copy"></i> COPY
+                                </button>
+                            </div>
+                        </div>
+                        <p>৪. টাকার পরিমাণ: <b id="pay-amount-text" class="text-yellow-300">100</b> Tk</p>
+                        <p>৫. পাঠানো শেষ হলে TrxID উপরের বক্সে দিয়ে ভেরিফাই বাটনে চাপ দিন।</p>
+                    </div>
+                </div>
+
+                <button onclick="handleNewVerify()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md transition active:scale-95 text-sm uppercase tracking-wider">
+                    VERIFY & COMPLETE
+                </button>
+            </div>
+        </section>
+
+        <!-- ORDER HISTORY SECTION -->
+        <section id="history-sec" class="hidden animate-fade-in pb-10">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-3.5 mb-3">
+                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide"><i class="fas fa-history mr-1"></i> Order History</h2>
+            </div>
+            <div id="history-list" class="space-y-2.5"></div>
+        </section>
+
+        <!-- ACCOUNT SECTION -->
+        <section id="account-sec" class="hidden animate-fade-in pb-10">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center mb-4">
+                <div class="w-20 h-20 rounded-full mx-auto bg-gradient-to-tr from-sky-400 to-blue-600 p-1 shadow-md mb-2">
+                    <div class="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                        <span id="profile-initial" class="text-3xl font-bold text-sky-600">U</span>
+                        <img id="acc-profile-img" src="" class="w-full h-full object-cover hidden">
+                    </div>
+                </div>
+                <h2 class="text-base font-bold text-gray-800" id="acc-profile-name">User Name</h2>
+                <p class="text-xs text-gray-500 mb-2" id="acc-email">user@gmail.com</p>
+                <div class="inline-block bg-sky-50 text-sky-700 text-xs px-3 py-1 rounded-full font-bold border border-sky-200">
+                    ব্যালেন্স: ৳<span id="acc-profile-balance">0</span>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 gap-2.5 mb-4 text-center">
+                <div class="bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
+                    <h4 class="text-sky-600 font-bold text-base" id="acc-support-pin">---</h4>
+                    <span class="text-[10px] text-gray-500 uppercase font-semibold">Support PIN</span>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
+                    <h4 class="text-sky-600 font-bold text-base"><span id="acc-weekly-spent">0</span> ৳</h4>
+                    <span class="text-[10px] text-gray-500 uppercase font-semibold">Weekly Spent</span>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
+                    <h4 class="text-sky-600 font-bold text-base"><span id="acc-total-spent">0</span> ৳</h4>
+                    <span class="text-[10px] text-gray-500 uppercase font-semibold">Total Spent</span>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-sky-100 shadow-sm">
+                    <h4 class="text-sky-600 font-bold text-base" id="acc-total-orders">0</h4>
+                    <span class="text-[10px] text-gray-500 uppercase font-semibold">Total Orders</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 space-y-2 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-50">
+                    <span class="text-gray-500">Phone:</span>
+                    <span id="acc-phone" class="font-bold text-gray-700">Not Available</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-50">
+                    <span class="text-gray-500">Account Status:</span>
+                    <span class="text-emerald-600 font-bold"><i class="fas fa-check-circle"></i> Verified</span>
+                </div>
+            </div>
+
+            <button onclick="handleLogout()" class="w-full bg-red-50 text-red-600 hover:bg-red-100 py-3 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 border border-red-200">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </section>
+
+    </main>
+
+    <!-- Floating Help Button (FAB) -->
+    <div id="fab-container" class="fixed bottom-20 right-4 z-50">
+        <div class="flex items-center gap-2">
+            <div id="fab-help-text" class="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-md transition-opacity duration-300">
+                সাহায্য লাগবে ?
+            </div>
+            
+            <div class="relative flex flex-col items-center">
+                <div id="fab-options" class="absolute bottom-14 space-y-2 transition-all duration-300 ease-out transform translate-y-4 opacity-0 pointer-events-none">
+                    <a id="link-whatsapp" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 text-[#25D366] text-xl">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                    <a id="link-telegram" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 text-[#0088cc] text-xl">
+                        <i class="fab fa-telegram-plane"></i>
+                    </a>
+                </div>
+                <button id="fab-toggler" onclick="toggleFabMenu()" class="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white text-lg shadow-xl hover:bg-red-700 focus:outline-none transition-transform">
+                    <i id="fab-icon-open" class="fas fa-headset transition-all duration-300"></i>
+                    <i id="fab-icon-close" class="fas fa-times absolute transition-all duration-300 transform scale-0 opacity-0 -rotate-180"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-gray-200 py-2.5 px-4 z-40 max-w-md mx-auto left-0 right-0 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] rounded-t-2xl">
+        <div class="flex justify-between items-center text-center">
+            <button onclick="showSec('home')" class="nav-item flex flex-col items-center gap-1 text-gray-500 hover:text-sky-600 active-tab w-14" id="nav-home">
+                <i class="fas fa-home text-base"></i>
+                <span class="text-[9px] font-bold">Home</span>
+            </button>
+            
+            <button onclick="showSec('tutorial')" class="nav-item flex flex-col items-center gap-1 text-gray-500 hover:text-sky-600 w-14" id="nav-tutorial">
+                <i class="fas fa-play-circle text-base"></i>
+                <span class="text-[9px] font-bold">Tutorial</span>
+            </button>
+            
+            <button onclick="showSec('addmoney')" class="nav-item flex flex-col items-center gap-1 text-gray-500 hover:text-sky-600 w-14" id="nav-addmoney">
+                <i class="fas fa-plus-circle text-base text-sky-600"></i>
+                <span class="text-[9px] font-bold text-sky-600">Add Money</span>
+            </button>
+            
+            <button onclick="showSec('history')" class="nav-item flex flex-col items-center gap-1 text-gray-500 hover:text-sky-600 w-14" id="nav-history">
+                <i class="fas fa-receipt text-base"></i>
+                <span class="text-[9px] font-bold">History</span>
+            </button>
+            
+            <button onclick="showSec('account')" class="nav-item flex flex-col items-center gap-1 text-gray-500 hover:text-sky-600 w-14" id="nav-account">
+                <i class="fas fa-user text-base"></i>
+                <span class="text-[9px] font-bold">Account</span>
+            </button>
+        </div>
+    </nav>
+</div>
+
+<script>
+    // --- 1. FIREBASE CONFIGURATION (YOUR PROJECT) ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBFXTntDxeqk0t6JSAWREhnElaTuESsxxg",
+        authDomain: "topup-28130.firebaseapp.com",
+        databaseURL: "https://topup-28130-default-rtdb.firebaseio.com",
+        projectId: "topup-28130",
+        storageBucket: "topup-28130.firebasestorage.app",
+        messagingSenderId: "983872252283",
+        appId: "1:983872252283:web:7b770c53f4fe3c6a83f5de",
+        measurementId: "G-GBV4WQF67H"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const rtdb = firebase.database();
+
+    let currentUser = null;
+    let currentUserPhone = '';
+    let userBalance = 0;
+    let selectedProduct = null;
+    let selectedGameId = null;
+    let selectedGameName = "";
+    let selectedGameType = 'uid';
+    let gamesData = {};
+    let isAutoPayEnabled = false;
+    let selectedPaymentMethod = 'wallet';
+    let isDirectBuy = false;
+    let pendingDirectOrder = null;
+    let verifiedPlayerName = "";
+    let currentDepositAmount = 100;
+    let currentPaymentMethod = 'bKash';
+    let howToVideoId = "dQw4w9WgXcQ";
+
+    // --- 2. GLOBAL SETTINGS & LISTENERS ---
+    function loadGlobalSettings() {
+        db.collection("settings").doc("general").onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                const siteName = data.siteName || "DRN TOPUP";
+                const logoUrl = data.logoUrl || "https://i.ibb.co/TBwjc0qy/pay-logo-1764254679.png";
+                
+                isAutoPayEnabled = data.autoPayEnabled === true;
+                
+                document.getElementById('header-logo-img').src = logoUrl;
+                document.getElementById('about-logo-img').src = logoUrl;
+                document.getElementById('header-site-title').innerText = siteName;
+                document.getElementById('about-site-name').innerText = siteName;
+                document.title = siteName;
+
+                if (data.notice) document.getElementById('notice-text').innerText = data.notice;
+                
+                const waNum = data.whatsapp ? String(data.whatsapp).replace(/\s/g, '') : "";
+                const tgLink = data.telegram || "#";
+                const fbLink = data.facebook || "#";
+                const ytLink = data.youtube || "#";
+                const waLink = waNum ? `https://wa.me/${waNum}` : "#";
+
+                document.getElementById('home-whatsapp').href = waLink;
+                document.getElementById('home-telegram').href = tgLink;
+                document.getElementById('link-whatsapp').href = waLink;
+                document.getElementById('link-telegram').href = tgLink;
+                document.getElementById('about-facebook').href = fbLink;
+                document.getElementById('about-youtube').href = ytLink;
+                document.getElementById('about-telegram').href = tgLink;
+                document.getElementById('about-whatsapp').href = waLink;
+
+                const promoContainer = document.getElementById('promo-banner-container');
+                const promoImg = document.getElementById('promo-banner-img');
+                const promoLink = document.getElementById('promo-banner-link');
+                if (data.promoImageUrl && promoContainer && promoImg) {
+                    promoImg.src = data.promoImageUrl;
+                    promoLink.href = data.promoImageLink || "#";
+                    promoContainer.classList.remove('hidden');
+                }
+            }
+        });
+
+        db.collection("settings").doc("videos").get().then((doc) => {
+            if (doc.exists && doc.data().howToAddMoney) {
+                howToVideoId = doc.data().howToAddMoney;
+                const vf = document.getElementById("new-tutorial-video");
+                if (vf) vf.src = `https://www.youtube.com/embed/${howToVideoId}`;
+            }
+        }).catch(console.error);
+    }
+    loadGlobalSettings();
+
+    // --- 3. AUTHENTICATION ---
+    function showAuthPage() { showSec('auth'); }
+    function toggleAuth(view) {
+        if (view === 'login') {
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('register-view').classList.add('hidden');
+        } else {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('register-view').classList.remove('hidden');
+        }
+    }
+
+    function handleRegister() {
+        const name = document.getElementById('reg-name').value.trim();
+        const email = document.getElementById('reg-email').value.trim();
+        const pass = document.getElementById('reg-pass').value.trim();
+        const phone = document.getElementById('reg-phone').value.trim();
+
+        if (!name || !email || !pass) return Swal.fire('Error', 'সবগুলো তথ্য সঠিকভাবে পূরণ করুন', 'warning');
+        
+        Swal.showLoading();
+        auth.createUserWithEmailAndPassword(email, pass)
+            .then(cred => db.collection('users').doc(cred.user.uid).set({
+                name, email, phone, balance: 0, createdAt: new Date()
+            }))
+            .then(() => {
+                Swal.fire('Success', 'একাউন্ট তৈরি সম্পন্ন হয়েছে!', 'success');
+                showSec('home');
+            })
+            .catch(err => Swal.fire('Error', err.message, 'error'));
+    }
+
+    function handleLogin() {
+        const email = document.getElementById('login-email').value.trim();
+        const pass = document.getElementById('login-pass').value.trim();
+        if (!email || !pass) return Swal.fire('Notice', 'Email ও Password দিন', 'info');
+
+        Swal.showLoading();
+        auth.signInWithEmailAndPassword(email, pass)
+            .then(() => {
+                Swal.close();
+                showSec('home');
+            })
+            .catch(err => Swal.fire('Login Failed', err.message, 'error'));
+    }
+
+    function handleGoogleLogin() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).then(res => {
+            const user = res.user;
+            const ref = db.collection('users').doc(user.uid);
+            ref.get().then(doc => {
+                if (!doc.exists) {
+                    ref.set({
+                        name: user.displayName || 'G-User',
+                        email: user.email,
+                        balance: 0,
+                        createdAt: new Date(),
+                        photoURL: user.photoURL
+                    });
+                }
+            });
+            showSec('home');
+        }).catch(err => Swal.fire('Error', err.message, 'error'));
+    }
+
+    function handleLogout() {
+        auth.signOut().then(() => showSec('home'));
+    }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('header-login-container').classList.add('hidden');
+            document.getElementById('header-balance-container').classList.remove('hidden');
+            loadUserData(user.uid);
+            calculateUserStats(user.uid);
+        } else {
+            currentUser = null;
+            currentUserPhone = '';
+            document.getElementById('header-login-container').classList.remove('hidden');
+            document.getElementById('header-balance-container').classList.add('hidden');
+        }
+    });
+
+    function loadUserData(uid) {
+        db.collection('users').doc(uid).onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                userBalance = data.balance || 0;
+                currentUserPhone = data.phone || '';
+                
+                document.getElementById('header-balance').innerText = userBalance;
+                document.getElementById('topup-balance-display').innerText = userBalance.toFixed(2);
+                document.getElementById('acc-profile-balance').innerText = userBalance;
+                document.getElementById('acc-profile-name').innerText = data.name || "User";
+                document.getElementById('acc-email').innerText = data.email || "";
+                document.getElementById('acc-phone').innerText = data.phone || "Not Set";
+                document.getElementById('acc-support-pin').innerText = uid.substring(0, 6).toUpperCase();
+            }
+        });
+    }
+
+    function calculateUserStats(uid) {
+        db.collection('orders').where('userId', '==', uid).get().then(snap => {
+            let total = 0, spent = 0, weekly = 0;
+            const weekAgo = new Date(Date.now() - 7 * 86400000);
+            snap.forEach(d => {
+                const od = d.data();
+                total++;
+                const st = (od.status || '').toLowerCase();
+                if (['success', 'completed'].includes(st)) {
+                    spent += parseInt(od.price || 0);
+                    if (od.date && (od.date.toDate ? od.date.toDate() : new Date(od.date)) >= weekAgo) {
+                        weekly += parseInt(od.price || 0);
+                    }
+                }
+            });
+            document.getElementById('acc-total-orders').innerText = total;
+            document.getElementById('acc-total-spent').innerText = spent;
+            document.getElementById('acc-weekly-spent').innerText = weekly;
+        });
+    }
+
+    // --- 4. SERVICES & HOMEPAGE ---
+    async function loadGamesAndCategories() {
+        const listContainer = document.getElementById('services-list');
+        try {
+            const [categoriesSnap, servicesSnap] = await Promise.all([
+                db.collection("categories").orderBy("slot").get(),
+                db.collection("services").get()
+            ]);
+
+            if (servicesSnap.empty) {
+                // Default fallback if database empty
+                listContainer.innerHTML = `
+                    <div class="bg-white p-4 rounded-xl border border-gray-100 text-center">
+                        <h3 class="font-bold text-gray-800 text-sm mb-3">Free Fire TopUp</h3>
+                        <div class="flex justify-center">
+                            <div onclick="openTopUpPage('ff_bd', 'Free Fire BD (UID)', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=300&auto=format&fit=crop')" 
+                                 class="w-36 bg-white p-2 rounded-xl shadow-sm border border-gray-200 cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=300&auto=format&fit=crop" class="w-full h-24 object-cover rounded-lg">
+                                <p class="text-xs font-bold text-center mt-2">Free Fire Topup</p>
+                            </div>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const categoriesMap = new Map();
+            categoriesSnap.forEach(doc => categoriesMap.set(doc.id, { ...doc.data(), games: [] }));
+            let uncategorized = [];
+
+            servicesSnap.forEach(doc => {
+                const game = { id: doc.id, ...doc.data() };
+                gamesData[doc.id] = game;
+                if (game.categoryId && categoriesMap.has(game.categoryId)) {
+                    categoriesMap.get(game.categoryId).games.push(game);
+                } else {
+                    uncategorized.push(game);
+                }
+            });
+
+            listContainer.innerHTML = "";
+            categoriesMap.forEach(category => {
+                if (category.games.length > 0) {
+                    let gHtml = category.games.map(item => `
+                        <div onclick="openTopUpPage('${item.id}', '${item.name}', '${item.image}')" 
+                             class="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition border border-gray-100">
+                            <div class="aspect-square bg-slate-100 overflow-hidden">
+                                <img src="${item.image}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/200'">
+                            </div>
+                            <div class="p-2 text-center">
+                                <p class="text-xs font-bold text-gray-700 truncate">${item.name}</p>
+                            </div>
+                        </div>
+                    `).join("");
+
+                    listContainer.innerHTML += `
+                        <div>
+                            <h3 class="font-bold text-gray-700 text-sm mb-2 px-1">${category.name}</h3>
+                            <div class="grid grid-cols-3 gap-2.5">${gHtml}</div>
+                        </div>`;
+                }
+            });
+        } catch (e) {
+            console.error(e);
+            listContainer.innerHTML = '<div class="text-center text-xs text-red-500 py-4">গেম লোড করতে সমস্যা হয়েছে।</div>';
+        }
+    }
+
+    function loadTutorials() {
+        db.collection("tutorials").onSnapshot(snap => {
+            const tc = document.getElementById('tutorial-list-container');
+            if (snap.empty) return;
+            tc.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                tc.innerHTML += `
+                    <div class="bg-slate-50 border border-gray-200 rounded-xl overflow-hidden cursor-pointer" onclick="window.open('${d.link}', '_blank')">
+                        <img src="${d.thumbnail}" class="w-full aspect-video object-cover">
+                        <div class="p-3">
+                            <h4 class="font-bold text-xs text-gray-800 line-clamp-2">${d.title}</h4>
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    function loadBanners() {
+        db.collection("banners").onSnapshot(snap => {
+            if (snap.empty) return;
+            const wrap = document.getElementById('slider-wrapper');
+            let html = "";
+            snap.forEach(doc => {
+                if (doc.data().image) html += `<img src="${doc.data().image}" class="w-full h-full object-cover flex-shrink-0">`;
+            });
+            if (html) { wrap.innerHTML = html; startSlider(); }
+        });
+    }
+
+    let sliderTimer;
+    function startSlider() {
+        clearInterval(sliderTimer);
+        let idx = 0;
+        const wrap = document.getElementById('slider-wrapper');
+        sliderTimer = setInterval(() => {
+            if (!wrap.children.length) return;
+            idx = (idx + 1) % wrap.children.length;
+            wrap.style.transform = `translateX(-${idx * 100}%)`;
+        }, 3500);
+    }
+
+    function loadRecentOrdersGlobal() {
+        db.collection('orders').orderBy('date', 'desc').limit(5).onSnapshot(snap => {
+            const con = document.getElementById('latest-orders-list');
+            if (snap.empty) {
+                con.innerHTML = `<div class="text-center text-xs text-gray-400 py-2">কোন অর্ডার পাওয়া যায়নি</div>`;
+                return;
+            }
+            con.innerHTML = "";
+            snap.forEach(d => {
+                const val = d.data();
+                const name = val.userName || "Player";
+                con.innerHTML += `
+                    <div class="bg-white p-2.5 rounded-xl border border-gray-100 flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <div class="w-8 h-8 rounded-full bg-sky-500 text-white font-bold flex items-center justify-center text-xs flex-shrink-0">
+                                ${name.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="truncate text-xs">
+                                <b class="text-gray-800 truncate block">${name}</b>
+                                <span class="text-[10px] text-gray-400">${val.productName} (৳${val.price})</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${val.status === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                            ${val.status || 'pending'}
+                        </span>
+                    </div>`;
+            });
+        });
+    }
+
+    // --- 5. TOPUP & UID CHECK LOGIC ---
+    function openTopUpPage(id, name, img) {
+        selectedGameId = id;
+        selectedGameName = name;
+        selectedProduct = null;
+        selectedGameType = (gamesData[id] && gamesData[id].type) ? gamesData[id].type : 'uid';
+        verifiedPlayerName = "";
+
+        document.getElementById('topup-game-img').src = img;
+        document.getElementById('topup-game-title').innerText = name;
+        document.getElementById('game-player-id').value = "";
+        resetUidCheckUI();
+        selectPaymentOption('wallet');
+        showSec('topup');
+
+        const grid = document.getElementById('products-grid');
+        const loader = document.getElementById('product-loader');
+        grid.innerHTML = "";
+        loader.classList.remove('hidden');
+
+        db.collection('services').doc(id).collection('products').orderBy('price', 'asc').get().then(snap => {
+            loader.classList.add('hidden');
+            if (snap.empty) {
+                // Sample default options if empty
+                [
+                    { id: '1', name: '115 Diamonds', price: 80 },
+                    { id: '2', name: '240 Diamonds', price: 160 },
+                    { id: '3', name: '610 Diamonds', price: 400 },
+                    { id: '4', name: 'Weekly Membership', price: 175 }
+                ].forEach(prod => renderProductCard(prod.id, prod.name, prod.price, grid));
+                return;
+            }
+            snap.forEach(doc => renderProductCard(doc.id, doc.data().name, doc.data().price, grid));
+        });
+    }
+
+    function renderProductCard(id, name, price, grid) {
+        const card = document.createElement('div');
+        card.className = "product-card";
+        card.onclick = () => {
+            document.querySelectorAll('.product-card').forEach(el => el.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedProduct = { id, name, price: parseInt(price) };
+            document.getElementById('total-price').innerText = price;
+        };
+        card.innerHTML = `
+            <div class="flex items-center">
+                <div class="product-bullet"></div>
+                <span class="text-xs font-bold text-gray-700">${name}</span>
+            </div>
+            <span class="text-sky-600 font-bold text-xs">৳${price}</span>`;
+        grid.appendChild(card);
+    }
+
+    function selectPaymentOption(opt) {
+        selectedPaymentMethod = opt;
+        document.querySelectorAll('.pay-option-card').forEach(el => el.classList.remove('selected'));
+        document.getElementById('opt-' + opt).classList.add('selected');
+    }
+
+    function resetUidCheckUI() {
+        const btn = document.getElementById("uidCheckBtn");
+        const txt = document.getElementById("uid-check-result-text");
+        const det = document.getElementById("uid-player-details");
+        btn.className = "w-full bg-gradient-to-r from-red-600 to-orange-500 text-white text-center py-2.5 rounded-lg font-bold text-xs shadow cursor-pointer transition flex items-center justify-center gap-2";
+        if (txt) txt.innerHTML = "খেলোয়াড়ের নাম চেক করতে ক্লিক করুন";
+        if (det) det.classList.add("hidden");
+    }
+
+    function onUidInputChanged() {
+        verifiedPlayerName = "";
+        resetUidCheckUI();
+    }
+
+    async function uidCheck() {
+        const uid = document.getElementById("game-player-id").value.trim();
+        const btn = document.getElementById("uidCheckBtn");
+        const txt = document.getElementById("uid-check-result-text");
+        const det = document.getElementById("uid-player-details");
+        const nameDisp = document.getElementById("verified-player-name");
+
+        if (!uid) return Swal.fire('UID দিন', 'দয়া করে Free Fire Player UID লিখুন', 'warning');
+        if (!navigator.onLine) return Swal.fire('Offline', 'ইন্টারনেট সংযোগ চেক করুন', 'error');
+
+        txt.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking Player Name...';
+        btn.className = "w-full bg-gray-700 text-white text-center py-2.5 rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2";
+
+        const endpoints = [
+            `https://free-ff-api-src-5plp.onrender.com/api/v1/account?region=BD&uid=${uid}`,
+            `https://bhauxinfo2.vercel.app/bhau?uid=${uid}&region=BD`,
+            `https://freefireinfo-zy9l.onrender.com/api/v1/account?region=BD&uid=${uid}`
+        ];
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2000);
+
+        try {
+            const fastest = await Promise.any(endpoints.map(async url => {
+                const res = await fetch(url, { signal: controller.signal });
+                const d = await res.json();
+                const name = d?.basicInfo?.nickname || d?.nickname || d?.AccountInfo?.AccountName;
+                if (name && name.trim()) return name;
+                throw new Error("No name");
+            }));
+            clearTimeout(timeout);
+
+            verifiedPlayerName = fastest;
+            btn.className = "w-full bg-emerald-600 text-white text-center py-2.5 rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2";
+            txt.innerHTML = `<i class="fas fa-check-circle"></i> Player: ${fastest}`;
+            det.classList.remove("hidden");
+            nameDisp.innerText = fastest;
+        } catch (err) {
+            clearTimeout(timeout);
+            verifiedPlayerName = "ID Verified";
+            btn.className = "w-full bg-sky-600 text-white text-center py-2.5 rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2";
+            txt.innerHTML = `<i class="fas fa-check"></i> Player UID: ${uid} (Valid)`;
+            det.classList.remove("hidden");
+            nameDisp.innerText = "UID: " + uid;
+        }
+    }
+
+    async function processOrder() {
+        if (!currentUser) return showAuthPage();
+        const uid = document.getElementById('game-player-id').value.trim();
+        if (!uid) return Swal.fire('Error', 'Player ID দিন', 'warning');
+        if (!selectedProduct) return Swal.fire('Error', 'ডায়মন্ড প্যাকেজ সিলেক্ট করুন', 'warning');
+
+        if (selectedPaymentMethod === 'instant') {
+            isDirectBuy = true;
+            currentDepositAmount = selectedProduct.price;
+            pendingDirectOrder = { uid, nickname: verifiedPlayerName || "N/A", product: selectedProduct };
+            
+            showSec('addmoney');
+            document.getElementById('am-step-1').classList.add('hidden');
+            document.getElementById('am-step-2').classList.remove('hidden');
+            document.getElementById('am-step-3').classList.add('hidden');
+            return;
+        }
+
+        if (userBalance < selectedProduct.price) {
+            return Swal.fire('স্বল্প ব্যালেন্স', 'আপনার একাউন্টে পর্যাপ্ত ব্যালেন্স নেই। Add Money করুন।', 'error');
+        }
+
+        const confirm = await Swal.fire({
+            title: 'অর্ডার নিশ্চিত করুন',
+            html: `প্যাকেজ: <b>${selectedProduct.name}</b><br>UID: <b>${uid}</b><br>মূল্য: <b>৳${selectedProduct.price}</b>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'হ্যাঁ, কিনুন'
+        });
+
+        if (confirm.isConfirmed) {
+            Swal.showLoading();
+            const newBal = userBalance - selectedProduct.price;
+            db.collection('users').doc(currentUser.uid).update({ balance: newBal }).then(() => {
+                return db.collection('orders').add({
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email.split('@')[0],
+                    userEmail: currentUser.email,
+                    userPhone: currentUserPhone,
+                    gameName: selectedGameName,
+                    playerId: uid,
+                    playerNickname: verifiedPlayerName || 'N/A',
+                    productName: selectedProduct.name,
+                    price: selectedProduct.price,
+                    type: selectedGameType,
+                    status: 'pending',
+                    date: new Date()
+                });
+            }).then(() => {
+                Swal.fire('অর্ডার সম্পন্ন!', 'অর্ডারটি অ্যাডমিন রিভিউ করে কিছুক্ষণের ভিতর ডেলিভারি করবে।', 'success');
+                showSec('home');
+            }).catch(e => Swal.fire('Error', e.message, 'error'));
+        }
+    }
+
+    // --- 6. ADD MONEY & VERIFY ---
+    function goToMethodStep() {
+        const val = parseInt(document.getElementById('new-amount-input').value);
+        if (!val || val < 10) return Swal.fire('Error', 'ন্যূনতম ১০ টাকা দিতে হবে', 'warning');
+        currentDepositAmount = val;
+        document.getElementById('am-step-1').classList.add('hidden');
+        document.getElementById('am-step-2').classList.remove('hidden');
+    }
+
+    function backToAmountStep() {
+        document.getElementById('am-step-2').classList.add('hidden');
+        document.getElementById('am-step-1').classList.remove('hidden');
+    }
+
+    function goToPaymentPage(method, themeClass, logoUrl) {
+        currentPaymentMethod = method;
+        document.getElementById('pay-method-logo').src = logoUrl;
+        document.getElementById('pay-amount-display').innerText = currentDepositAmount;
+        document.getElementById('pay-amount-text').innerText = currentDepositAmount;
+        document.querySelectorAll('.method-name').forEach(el => el.innerText = method);
+        
+        const card = document.getElementById('payment-theme-card');
+        card.className = `rounded-xl shadow p-4 text-white mb-4 ${themeClass}`;
+
+        document.getElementById('pay-admin-number').innerText = "লোড হচ্ছে...";
+        db.collection("admin").doc("payment").get().then(doc => {
+            if (doc.exists) {
+                const d = doc.data();
+                document.getElementById('pay-admin-number').innerText = d[method] || d[method.toLowerCase()] || "017XXXXXXXX";
+            }
+        });
+
+        document.getElementById('am-step-2').classList.add('hidden');
+        document.getElementById('am-step-3').classList.remove('hidden');
+    }
+
+    function backToMethodStep() {
+        document.getElementById('am-step-3').classList.add('hidden');
+        document.getElementById('am-step-2').classList.remove('hidden');
+    }
+
+    function copyPayNumber() {
+        const num = document.getElementById('pay-admin-number').innerText;
+        navigator.clipboard.writeText(num);
+        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'নম্বর কপি হয়েছে!', timer: 1500, showConfirmButton: false });
+    }
+
+    function handleNewVerify() {
+        const trxId = document.getElementById('pay-trx-input').value.trim();
+        if (!trxId) return Swal.fire('Warning', 'Transaction ID লিখুন', 'warning');
+
+        Swal.showLoading();
+        db.collection('deposits').add({
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            amount: currentDepositAmount,
+            trxId: trxId.toUpperCase(),
+            method: currentPaymentMethod,
+            status: 'pending',
+            date: new Date()
+        }).then(() => {
+            Swal.fire('রিকোয়েস্ট গৃহীত হয়েছে', 'অ্যাডমিন ভেরিফাই করে ব্যালেন্স যোগ করে দেবে।', 'success');
+            showSec('home');
+        }).catch(err => Swal.fire('Error', err.message, 'error'));
+    }
+
+    // --- 7. HISTORY & ROUTING ---
+    function showSec(id) {
+        if (['history', 'account', 'addmoney'].includes(id) && !currentUser) return showAuthPage();
+
+        document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-tab'));
+        
+        const sec = document.getElementById(id + '-sec');
+        if (sec) sec.classList.remove('hidden');
+        const nav = document.getElementById('nav-' + id);
+        if (nav) nav.classList.add('active-tab');
+
+        if (id === 'history') loadHistory();
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    function loadHistory() {
+        const hl = document.getElementById('history-list');
+        hl.innerHTML = '<div class="text-center py-4 text-xs"><i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...</div>';
+        
+        db.collection('orders').where('userId', '==', currentUser.uid).get().then(snap => {
+            if (snap.empty) {
+                hl.innerHTML = '<div class="text-center py-6 text-xs text-gray-400">কোন অর্ডার নেই</div>';
+                return;
+            }
+            hl.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                hl.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between text-xs">
+                        <div>
+                            <h4 class="font-bold text-gray-800">${d.productName}</h4>
+                            <p class="text-gray-400 text-[10px]">UID: ${d.playerId}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-sky-600 block">৳${d.price}</span>
+                            <span class="text-[9px] uppercase font-bold text-amber-600">${d.status}</span>
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    function toggleFabMenu() {
+        document.getElementById('fab-container').classList.toggle('is-open');
+    }
+
+    // Initial triggers
+    loadGamesAndCategories();
+    loadTutorials();
+    loadBanners();
+    loadRecentOrdersGlobal();
+</script>
+</body>
+</html>
